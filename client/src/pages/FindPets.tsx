@@ -134,7 +134,7 @@ export default function FindPets() {
                         <SelectValue placeholder="All Animals" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Animals</SelectItem>
+                        <SelectItem value="all">All Animals</SelectItem>
                         <SelectItem value="dog">Dogs</SelectItem>
                         <SelectItem value="cat">Cats</SelectItem>
                         <SelectItem value="rabbit">Rabbits</SelectItem>
@@ -179,7 +179,7 @@ export default function FindPets() {
                         <SelectValue placeholder="Any Age" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Age</SelectItem>
+                        <SelectItem value="all">Any Age</SelectItem>
                         <SelectItem value="puppy">Puppy/Kitten (&lt; 1 year)</SelectItem>
                         <SelectItem value="young">Young (1-5 years)</SelectItem>
                         <SelectItem value="adult">Adult (5-10 years)</SelectItem>
@@ -195,7 +195,7 @@ export default function FindPets() {
                         <SelectValue placeholder="Any Gender" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Gender</SelectItem>
+                        <SelectItem value="all">Any Gender</SelectItem>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
                       </SelectContent>
@@ -209,7 +209,7 @@ export default function FindPets() {
                         <SelectValue placeholder="Any Size" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Size</SelectItem>
+                        <SelectItem value="all">Any Size</SelectItem>
                         <SelectItem value="small">Small</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="large">Large</SelectItem>
@@ -280,7 +280,7 @@ export default function FindPets() {
                             <SelectValue placeholder="All Animals" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Animals</SelectItem>
+                            <SelectItem value="all">All Animals</SelectItem>
                             <SelectItem value="dog">Dogs</SelectItem>
                             <SelectItem value="cat">Cats</SelectItem>
                             <SelectItem value="rabbit">Rabbits</SelectItem>
@@ -297,7 +297,7 @@ export default function FindPets() {
                             <SelectValue placeholder="Any Gender" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any Gender</SelectItem>
+                            <SelectItem value="all">Any Gender</SelectItem>
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                           </SelectContent>
@@ -311,7 +311,7 @@ export default function FindPets() {
                             <SelectValue placeholder="Any Age" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any Age</SelectItem>
+                            <SelectItem value="all">Any Age</SelectItem>
                             <SelectItem value="puppy">Puppy/Kitten (&lt; 1 year)</SelectItem>
                             <SelectItem value="young">Young (1-5 years)</SelectItem>
                             <SelectItem value="adult">Adult (5-10 years)</SelectItem>
@@ -327,7 +327,7 @@ export default function FindPets() {
                             <SelectValue placeholder="Any Size" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any Size</SelectItem>
+                            <SelectItem value="all">Any Size</SelectItem>
                             <SelectItem value="small">Small</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="large">Large</SelectItem>

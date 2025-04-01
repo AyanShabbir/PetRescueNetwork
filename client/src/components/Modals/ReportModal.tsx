@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { CalendarIcon, Upload } from "lucide-react";
+import { CalendarIcon, Upload, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -74,10 +74,21 @@ export default function ReportModal({ isOpen, onClose, initialType = 'lost' }: R
     }
   });
 
+  const [images, setImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const onSubmit = async (data: ReportFormValues) => {
     setIsSubmitting(true);
     try {
-      await apiRequest('POST', '/api/lost-found-pets', data);
+      // Add images array to the data
+      const submitData = {
+        ...data,
+        images: images
+      };
+      
+      console.log("Submitting data:", submitData);
+      
+      await apiRequest('POST', '/api/lost-found-pets', submitData);
       
       toast({
         title: "Report submitted successfully",
@@ -87,7 +98,9 @@ export default function ReportModal({ isOpen, onClose, initialType = 'lost' }: R
       
       onClose();
       form.reset();
+      setImages([]);
     } catch (error) {
+      console.error("Error submitting report:", error);
       toast({
         title: "Error submitting report",
         description: "There was a problem submitting your report. Please try again.",
@@ -296,17 +309,28 @@ export default function ReportModal({ isOpen, onClose, initialType = 'lost' }: R
             </div>
             
             <div className="mb-4">
-              <FormLabel>Upload Photos</FormLabel>
+              <FormLabel>Upload Photos (Optional)</FormLabel>
               <div className="border-2 border-dashed border-neutral-300 rounded-md p-4 text-center">
                 <Upload className="mx-auto h-10 w-10 text-neutral-400" />
                 <p className="text-sm text-neutral-500 mt-1">Drag photos here or click to upload</p>
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  className="mt-2 text-primary text-sm"
-                >
-                  Choose Files
-                </Button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  accept="image/*" 
+                  multiple
+                />
+                <div className="flex justify-center gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="mt-2 text-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Choose Files
+                  </Button>
+                </div>
+                <p className="text-xs text-neutral-500 mt-2">You can continue without uploading photos</p>
               </div>
             </div>
             

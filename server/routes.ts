@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import session from "express-session";
 import { z } from "zod";
 import { ZodError } from "zod-validation-error";
 import {
@@ -10,45 +9,12 @@ import {
   insertShelterSchema,
   insertAdoptionRequestSchema,
   insertLostFoundPetSchema,
-  insertDonationSchema,
 } from "@shared/schema";
-
-// Auth middleware
-const authenticateUser = async (req: Request, res: Response, next: Function) => {
-  const { userId } = req.session as any;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  
-  const user = await storage.getUser(userId);
-  if (!user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  
-  (req as any).user = user;
-  next();
-};
-
-const checkRole = (roles: string[]) => {
-  return (req: Request, res: Response, next: Function) => {
-    const user = (req as any).user;
-    if (!user || !roles.includes(user.role)) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    next();
-  };
-};
+import { setupAuth, requireAuth, requireRole } from './auth';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure sessions
-  app.use(
-    session({
-      secret: "pet-rescue-hub-secret",
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === "production" },
-    })
-  );
+  // Set up authentication
+  setupAuth(app);
 
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
@@ -170,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pets", authenticateUser, checkRole(["shelter_staff", "admin"]), async (req, res) => {
+  app.post("/api/pets", requireAuth, requireRole(["shelter_staff", "admin"]), async (req, res) => {
     try {
       const petData = insertPetSchema.parse(req.body);
       const pet = await storage.createPet(petData);
@@ -183,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/pets/:id", authenticateUser, checkRole(["shelter_staff", "admin"]), async (req, res) => {
+  app.put("/api/pets/:id", requireAuth, requireRole(["shelter_staff", "admin"]), async (req, res) => {
     try {
       const petId = parseInt(req.params.id);
       if (isNaN(petId)) {
@@ -230,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/shelters", authenticateUser, checkRole(["admin"]), async (req, res) => {
+  app.post("/api/shelters", requireAuth, requireRole(["admin"]), async (req, res) => {
     try {
       const shelterData = insertShelterSchema.parse(req.body);
       const shelter = await storage.createShelter(shelterData);
@@ -244,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Adoption request routes
-  app.post("/api/adoption-requests", authenticateUser, async (req, res) => {
+  app.post("/api/adoption-requests", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).user.id;
       
@@ -278,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/adoption-requests/user", authenticateUser, async (req, res) => {
+  app.get("/api/adoption-requests/user", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).user.id;
       const requests = await storage.getAdoptionRequestsByUser(userId);
@@ -297,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/adoption-requests/pet/:petId", authenticateUser, checkRole(["shelter_staff", "admin"]), async (req, res) => {
+  app.get("/api/adoption-requests/pet/:petId", requireAuth, requireRole(["shelter_staff", "admin"]), async (req, res) => {
     try {
       const petId = parseInt(req.params.petId);
       if (isNaN(petId)) {
@@ -325,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/adoption-requests/:id", authenticateUser, checkRole(["shelter_staff", "admin"]), async (req, res) => {
+  app.put("/api/adoption-requests/:id", requireAuth, requireRole(["shelter_staff", "admin"]), async (req, res) => {
     try {
       const requestId = parseInt(req.params.id);
       if (isNaN(requestId)) {
@@ -392,17 +358,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lost-found-pets", async (req, res) => {
     try {
       // If user is logged in, use their ID, otherwise use a default (guest) reporter
-      const user = (req as any).user;
-      const reporterId = user ? user.id : 0;
+      let reporterId = 1; // Default guest user ID
+      
+      if (req.isAuthenticated()) {
+        reporterId = (req.user as any).id;
+      }
+      
+      console.log("Processing lost/found pet report with data:", JSON.stringify(req.body));
       
       const petData = insertLostFoundPetSchema.parse({
         ...req.body,
         reporter_id: reporterId
       });
       
+      console.log("Validated pet data:", JSON.stringify(petData));
+      
       const pet = await storage.createLostFoundPet(petData);
       res.status(201).json(pet);
     } catch (error) {
+      console.error("Error creating lost/found pet report:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid pet data", errors: error.errors });
       }
@@ -428,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/lost-found-pets/:id", authenticateUser, async (req, res) => {
+  app.put("/api/lost-found-pets/:id", requireAuth, async (req, res) => {
     try {
       const petId = parseInt(req.params.id);
       if (isNaN(petId)) {
@@ -453,76 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Donation routes
-  app.post("/api/donations", async (req, res) => {
-    try {
-      // If user is logged in, use their ID, otherwise it can be an anonymous donation
-      const user = (req as any).user;
-      const userId = user ? user.id : undefined;
-      
-      const donationData = insertDonationSchema.parse({
-        ...req.body,
-        user_id: userId
-      });
-      
-      // Check if shelter exists
-      if (donationData.shelter_id) {
-        const shelter = await storage.getShelter(donationData.shelter_id);
-        if (!shelter) {
-          return res.status(404).json({ message: "Shelter not found" });
-        }
-      }
-      
-      const donation = await storage.createDonation(donationData);
-      res.status(201).json(donation);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid donation data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Server error" });
-    }
-  });
 
-  app.get("/api/donations/user", authenticateUser, async (req, res) => {
-    try {
-      const userId = (req as any).user.id;
-      const donations = await storage.getDonationsByUser(userId);
-      
-      // Get shelter details for each donation
-      const donationsWithShelters = await Promise.all(
-        donations.map(async (donation) => {
-          if (donation.shelter_id) {
-            const shelter = await storage.getShelter(donation.shelter_id);
-            return { ...donation, shelter };
-          }
-          return donation;
-        })
-      );
-      
-      res.json(donationsWithShelters);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  app.get("/api/donations/shelter/:shelterId", authenticateUser, checkRole(["shelter_staff", "admin"]), async (req, res) => {
-    try {
-      const shelterId = parseInt(req.params.shelterId);
-      if (isNaN(shelterId)) {
-        return res.status(400).json({ message: "Invalid shelter ID" });
-      }
-      
-      const shelter = await storage.getShelter(shelterId);
-      if (!shelter) {
-        return res.status(404).json({ message: "Shelter not found" });
-      }
-      
-      const donations = await storage.getDonationsByShelter(shelterId);
-      res.json(donations);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -103,20 +103,7 @@ export const insertLostFoundPetSchema = createInsertSchema(lostFoundPets).omit({
   created_at: true,
 });
 
-// Donations
-export const donations = pgTable("donations", {
-  id: serial("id").primaryKey(),
-  user_id: integer("user_id"),
-  shelter_id: integer("shelter_id"),
-  amount: integer("amount").notNull(),
-  message: text("message"),
-  created_at: timestamp("created_at").defaultNow(),
-});
 
-export const insertDonationSchema = createInsertSchema(donations).omit({
-  id: true,
-  created_at: true,
-});
 
 // Type definitions
 export type User = typeof users.$inferSelect;
@@ -133,6 +120,3 @@ export type InsertAdoptionRequest = z.infer<typeof insertAdoptionRequestSchema>;
 
 export type LostFoundPet = typeof lostFoundPets.$inferSelect;
 export type InsertLostFoundPet = z.infer<typeof insertLostFoundPetSchema>;
-
-export type Donation = typeof donations.$inferSelect;
-export type InsertDonation = z.infer<typeof insertDonationSchema>;
