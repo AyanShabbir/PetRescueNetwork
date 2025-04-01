@@ -36,7 +36,7 @@ export default function LostFound() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [locationFilter, setLocationFilter] = useState("");
-  const [petTypeFilter, setPetTypeFilter] = useState("");
+  const [petTypeFilter, setPetTypeFilter] = useState("all");
 
   // Fetch lost and found pets
   const { data: lostFoundPets, isLoading } = useQuery<LostFoundPet[]>({
@@ -55,7 +55,7 @@ export default function LostFound() {
 
   const resetFilters = () => {
     setLocationFilter("");
-    setPetTypeFilter("");
+    setPetTypeFilter("all");
   };
 
   // Filter pets based on tab and filters
@@ -70,7 +70,7 @@ export default function LostFound() {
       return false;
     }
 
-    if (petTypeFilter && pet.pet_type !== petTypeFilter) {
+    if (petTypeFilter && petTypeFilter !== "all" && pet.pet_type !== petTypeFilter) {
       return false;
     }
 
@@ -135,7 +135,7 @@ export default function LostFound() {
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="all">All Types</SelectItem>
                         <SelectItem value="dog">Dogs</SelectItem>
                         <SelectItem value="cat">Cats</SelectItem>
                         <SelectItem value="rabbit">Rabbits</SelectItem>
@@ -192,7 +192,7 @@ export default function LostFound() {
                           <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Types</SelectItem>
+                          <SelectItem value="all">All Types</SelectItem>
                           <SelectItem value="dog">Dogs</SelectItem>
                           <SelectItem value="cat">Cats</SelectItem>
                           <SelectItem value="rabbit">Rabbits</SelectItem>
