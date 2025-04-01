@@ -293,7 +293,7 @@ export default function LostFound() {
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 rounded-full overflow-hidden">
                   <img 
-                    src={selectedPet.images && selectedPet.images.length > 0 
+                    src={selectedPet.images && Array.isArray(selectedPet.images) && selectedPet.images.length > 0 
                       ? selectedPet.images[0] 
                       : "https://placehold.co/100x100?text=No+Image"} 
                     alt={selectedPet.name || `Unknown ${selectedPet.pet_type}`}

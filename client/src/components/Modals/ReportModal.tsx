@@ -76,6 +76,7 @@ export default function ReportModal({ isOpen, onClose, initialType = 'lost' }: R
 
   const [images, setImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const onSubmit = async (data: ReportFormValues) => {
     setIsSubmitting(true);
@@ -310,39 +311,123 @@ export default function ReportModal({ isOpen, onClose, initialType = 'lost' }: R
             
             <div className="mb-4">
               <FormLabel>Upload Photos (Optional)</FormLabel>
-              <div className="border-2 border-dashed border-neutral-300 rounded-md p-4 text-center">
-                <Upload className="mx-auto h-10 w-10 text-neutral-400" />
-                <p className="text-sm text-neutral-500 mt-1">Simplified example images are used</p>
+              <div 
+                className={`border-2 border-dashed ${isDragging ? 'border-primary bg-primary/5' : 'border-neutral-300'} rounded-md p-4 text-center transition-colors`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                  
+                  const files = e.dataTransfer.files;
+                  if (files && files.length > 0) {
+                    const fileList = files;
+                    const newImageUrls: string[] = [];
+                    
+                    for (let i = 0; i < fileList.length; i++) {
+                      // Filter for image files only
+                      if (!fileList[i].type.startsWith('image/')) continue;
+                      
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        if (event.target?.result) {
+                          newImageUrls.push(event.target.result.toString());
+                          if (newImageUrls.length === fileList.length) {
+                            setImages([...images, ...newImageUrls]);
+                          }
+                        }
+                      };
+                      reader.readAsDataURL(fileList[i]);
+                    }
+                  }
+                }}
+              >
+                <Upload className={`mx-auto h-10 w-10 ${isDragging ? 'text-primary' : 'text-neutral-400'}`} />
+                <p className="text-sm text-neutral-500 mt-1">{isDragging ? 'Drop files here' : 'Drag photos here or click to upload'}</p>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const fileList = e.target.files;
+                      const newImageUrls: string[] = [];
+                      
+                      // Convert each file to a Data URL
+                      for (let i = 0; i < fileList.length; i++) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          if (event.target?.result) {
+                            newImageUrls.push(event.target.result.toString());
+                            // Once we've processed all files, update the state
+                            if (newImageUrls.length === fileList.length) {
+                              setImages([...images, ...newImageUrls]);
+                            }
+                          }
+                        };
+                        reader.readAsDataURL(fileList[i]);
+                      }
+                    }
+                  }}
+                  style={{ display: 'none' }} 
+                  accept="image/*" 
+                  multiple
+                />
                 <div className="flex justify-center gap-2 mt-2">
                   <Button 
                     type="button" 
                     variant="outline" 
                     className="text-sm"
-                    onClick={() => {
-                      // Add a default image URL to demonstrate functionality
-                      setImages(["https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"]);
-                    }}
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    Add Example Image
+                    Choose Files
                   </Button>
                   
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="text-sm"
-                    onClick={() => setImages([])}
-                  >
-                    Clear Images
-                  </Button>
+                  {images.length > 0 && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="text-sm"
+                      onClick={() => setImages([])}
+                    >
+                      Clear Images
+                    </Button>
+                  )}
                 </div>
                 
                 {images.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-neutral-700 mb-2">Added Images:</p>
+                    <p className="text-sm font-medium text-neutral-700 mb-2">Added Images ({images.length}):</p>
                     <div className="flex flex-wrap gap-2 justify-center">
                       {images.map((img, index) => (
                         <div key={index} className="relative w-16 h-16 rounded-md overflow-hidden group">
                           <img src={img} alt={`Uploaded ${index}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImages = [...images];
+                              newImages.splice(index, 1);
+                              setImages(newImages);
+                            }}
+                            className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
                       ))}
                     </div>

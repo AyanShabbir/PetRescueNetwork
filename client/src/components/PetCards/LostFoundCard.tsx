@@ -37,7 +37,9 @@ export default function LostFoundCard({ pet, onContactClick }: LostFoundCardProp
       <div className="p-4">
         <div className="flex items-center mb-3">
           <img 
-            src={pet.images && pet.images.length > 0 ? pet.images[0] : "https://placehold.co/100x100?text=No+Image"} 
+            src={pet.images && Array.isArray(pet.images) && pet.images.length > 0 
+              ? pet.images[0] 
+              : "https://placehold.co/100x100?text=No+Image"} 
             alt={pet.name || `Unknown ${pet.pet_type}`} 
             className="w-16 h-16 rounded-full object-cover mr-3" 
           />
