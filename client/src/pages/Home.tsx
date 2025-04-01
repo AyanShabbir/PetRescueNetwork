@@ -142,9 +142,9 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center p-4 text-center border border-neutral-200 rounded-lg hover:border-primary/30 hover:bg-neutral-50 transition-colors">
               <Heart className="text-primary h-12 w-12 mb-3" />
-              <h4 className="font-semibold text-lg mb-2">Donate</h4>
-              <p className="text-sm text-neutral-600 mb-3">Support local shelters and rescue groups with donations of money, supplies, or time.</p>
-              <Link href="/donate" className="text-primary hover:underline mt-auto">Learn more</Link>
+              <h4 className="font-semibold text-lg mb-2">Volunteer</h4>
+              <p className="text-sm text-neutral-600 mb-3">Support local shelters and rescue groups with your time and skills.</p>
+              <Link href="/shelters" className="text-primary hover:underline mt-auto">Find shelters</Link>
             </div>
           </div>
         </section>
@@ -196,14 +196,14 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="md:w-2/3 mb-4 md:mb-0">
               <h3 className="text-xl md:text-2xl font-semibold mb-2">Want to help pets in your community?</h3>
-              <p className="text-neutral-700">Become a volunteer, foster parent, or make a donation to support shelter pets.</p>
+              <p className="text-neutral-700">Become a volunteer or foster parent to support shelter pets.</p>
             </div>
             <div className="md:w-1/3 flex flex-wrap gap-2 md:justify-end">
-              <Link href="/donate">
-                <Button className="bg-[#F5A623] hover:bg-[#F5A623]/90">Make a Donation</Button>
+              <Link href="/shelters">
+                <Button className="bg-[#F5A623] hover:bg-[#F5A623]/90">Find Shelters</Button>
               </Link>
-              <Link href="/volunteer">
-                <Button variant="outline" className="text-[#F5A623] border-[#F5A623]">Volunteer</Button>
+              <Link href="/lost-found">
+                <Button variant="outline" className="text-[#F5A623] border-[#F5A623]">Report Lost Pet</Button>
               </Link>
             </div>
           </div>

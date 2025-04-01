@@ -1,5 +1,5 @@
 import { apiRequest } from "./queryClient";
-import { Pet, LostFoundPet, AdoptionRequest, Shelter, Donation } from "@shared/schema";
+import { Pet, LostFoundPet, AdoptionRequest, Shelter } from "@shared/schema";
 
 // Authentication related API calls
 export const authAPI = {
@@ -160,29 +160,4 @@ export const sheltersAPI = {
   }
 };
 
-// Donation related API calls
-export const donationsAPI = {
-  makeDonation: (donationData: any) => {
-    return apiRequest("POST", "/api/donations", donationData);
-  },
-  
-  getUserDonations: async (): Promise<Donation[]> => {
-    const response = await fetch("/api/donations/user", { credentials: "include" });
-    
-    if (!response.ok) {
-      throw new Error("Failed to fetch user donations");
-    }
-    
-    return response.json();
-  },
-  
-  getShelterDonations: async (shelterId: number): Promise<Donation[]> => {
-    const response = await fetch(`/api/donations/shelter/${shelterId}`, { credentials: "include" });
-    
-    if (!response.ok) {
-      throw new Error("Failed to fetch shelter donations");
-    }
-    
-    return response.json();
-  }
-};
+

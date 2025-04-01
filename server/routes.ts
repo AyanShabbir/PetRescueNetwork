@@ -366,8 +366,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Processing lost/found pet report with data:", JSON.stringify(req.body));
       
+      // Convert date string to Date object if it's a string
+      let formData = {...req.body};
+      if (typeof formData.date === 'string') {
+        formData.date = new Date(formData.date);
+      }
+      
       const petData = insertLostFoundPetSchema.parse({
-        ...req.body,
+        ...formData,
         reporter_id: reporterId
       });
       
