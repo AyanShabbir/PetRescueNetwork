@@ -78,7 +78,8 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        // For the in-memory storage, we use direct password comparison
+        if (!user || password !== user.password) {
           return done(null, false, { message: 'Invalid credentials' });
         }
         return done(null, user);
@@ -112,12 +113,11 @@ export function setupAuth(app: Express) {
             if (!user) {
               // Generate a random password for Google users
               const randomPassword = randomBytes(16).toString('hex');
-              const hashedPassword = await hashPassword(randomPassword);
-
+              
               const newUser: InsertUser = {
                 username: profile.displayName.replace(/\s+/g, '') + Math.floor(Math.random() * 1000),
                 email,
-                password: hashedPassword,
+                password: randomPassword, // Using plain text for in-memory storage
                 name: profile.displayName || '',
                 role: 'adopter', // Default role
                 phone: null,
@@ -166,13 +166,10 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Email already exists' });
       }
 
-      // Hash password
-      const hashedPassword = await hashPassword(req.body.password);
-
-      // Create user
+      // For in-memory storage, we're using plain text passwords
+      // Create user with direct password
       const user = await storage.createUser({
         ...req.body,
-        password: hashedPassword,
         role: req.body.role || 'adopter',
       });
 

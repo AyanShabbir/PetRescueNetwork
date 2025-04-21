@@ -68,7 +68,7 @@ export class MemStorage implements IStorage {
     this.users.push({
       id: this.nextId++,
       username: 'admin',
-      password: 'admin123',
+      password: 'admin123', // This is plain text for the in-memory storage
       email: 'admin@petrescuehub.com',
       name: 'Admin User',
       role: 'admin',
@@ -81,7 +81,7 @@ export class MemStorage implements IStorage {
     this.users.push({
       id: this.nextId++,
       username: 'user',
-      password: 'user123',
+      password: 'user123', // This is plain text for the in-memory storage
       email: 'user@example.com',
       name: 'Regular User',
       role: 'adopter',
