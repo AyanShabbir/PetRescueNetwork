@@ -10,6 +10,7 @@ import Shelters from "@/pages/Shelters";
 import PetDetails from "@/pages/PetDetails";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Donate from "@/pages/Donate";
 import { AuthProvider } from "@/context/AuthContext";
 import { RoleProvider } from "@/context/RoleContext";
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/pet/:id" component={PetDetails} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/donate" component={Donate} />
       <Route component={NotFound} />
     </Switch>
   );
