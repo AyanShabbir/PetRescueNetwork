@@ -49,6 +49,10 @@ export default function Header() {
             Shelters
           </Link>
           
+          <Link href="/donate" className={`px-3 py-2 rounded-md ${isActive('/donate') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}>
+            Donate
+          </Link>
+          
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -111,6 +115,12 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Shelters
+            </Link>
+            <Link href="/donate" 
+              className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/donate') ? 'text-primary' : 'text-neutral-700 hover:text-primary'}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Donate
             </Link>
             {user ? (
               <>

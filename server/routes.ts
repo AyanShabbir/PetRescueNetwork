@@ -372,21 +372,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formData.date = new Date(formData.date);
       }
       
-      const petData = insertLostFoundPetSchema.parse({
+      // Default images to empty array if not provided
+      if (!formData.images) {
+        formData.images = [];
+      }
+      
+      const petData = {
         ...formData,
         reporter_id: reporterId
-      });
+      };
       
-      console.log("Validated pet data:", JSON.stringify(petData));
+      console.log("Processed pet data:", JSON.stringify(petData));
       
       const pet = await storage.createLostFoundPet(petData);
       res.status(201).json(pet);
     } catch (error) {
       console.error("Error creating lost/found pet report:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid pet data", errors: error.errors });
+        return res.status(400).json({ 
+          message: "Invalid pet data", 
+          errors: error.errors
+        });
       }
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ 
+        message: "Server error",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
