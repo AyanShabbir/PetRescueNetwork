@@ -1,16 +1,12 @@
-import { pgTable } from 'drizzle-orm/pg-core';
-import { json } from 'drizzle-orm/pg-core';
-import { eq, and, desc, asc } from 'drizzle-orm';
-import connectPg from 'connect-pg-simple';
 import session from 'express-session';
+import { createId } from '@paralleldrive/cuid2';
+import createMemoryStore from 'memorystore';
 import { 
   User, Pet, Shelter, AdoptionRequest, 
   LostFoundPet, InsertUser, 
   InsertPet, InsertShelter, InsertAdoptionRequest,
-  InsertLostFoundPet,
-  users, pets, shelters, adoptionRequests, lostFoundPets
+  InsertLostFoundPet
 } from '@shared/schema';
-import { db } from './db';
 
 export interface IStorage {
   sessionStore: any; // session store
@@ -51,186 +47,329 @@ export interface IStorage {
 
 }
 
-// Create a database store for sessions
-const PostgresSessionStore = connectPg(session);
+// Create a memory store for sessions
+const MemoryStore = createMemoryStore(session);
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
   sessionStore: any;
+  private users: User[] = [];
+  private pets: Pet[] = [];
+  private shelters: Shelter[] = [];
+  private adoptionRequests: AdoptionRequest[] = [];
+  private lostFoundPets: LostFoundPet[] = [];
+  private nextId = 1;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({
-      conString: process.env.DATABASE_URL!,
-      createTableIfMissing: true,
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    
+    // Add a default admin user
+    this.users.push({
+      id: this.nextId++,
+      username: 'admin',
+      password: 'admin123',
+      email: 'admin@petrescuehub.com',
+      name: 'Admin User',
+      role: 'admin',
+      bio: 'System administrator',
+      phone: null,
+      profile_picture: null
+    });
+    
+    // Add a default adopter user
+    this.users.push({
+      id: this.nextId++,
+      username: 'user',
+      password: 'user123',
+      email: 'user@example.com',
+      name: 'Regular User',
+      role: 'adopter',
+      bio: 'Pet lover',
+      phone: null,
+      profile_picture: null
+    });
+    
+    // Create some shelters
+    this.createShelter({
+      name: 'Happy Paws Rescue',
+      address: '123 Main St',
+      city: 'Springfield',
+      state: 'IL',
+      zip: '62701',
+      phone: '555-123-4567',
+      email: 'info@happypawsrescue.org',
+      website: 'https://www.happypawsrescue.org',
+      description: 'We specialize in rescuing and rehoming dogs and cats of all ages.'
+    });
+    
+    this.createShelter({
+      name: 'Second Chance Animal Shelter',
+      address: '456 Oak Ave',
+      city: 'Riverdale',
+      state: 'NY',
+      zip: '10471',
+      phone: '555-987-6543',
+      email: 'contact@secondchanceshelter.org',
+      website: 'https://www.secondchanceshelter.org',
+      description: 'Our mission is to rescue abandoned and stray animals and find them loving forever homes.'
+    });
+    
+    // Create some pets
+    this.createPet({
+      name: 'Max',
+      type: 'dog',
+      breed: 'Golden Retriever',
+      age: 3,
+      gender: 'male',
+      size: 'large',
+      color: 'golden',
+      weight: '65 lbs',
+      description: 'Friendly and energetic dog who loves to play fetch.',
+      status: 'available',
+      good_with_children: true,
+      good_with_dogs: true,
+      good_with_cats: false,
+      shelter_id: 1,
+      images: ['https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z29sZGVuJTIwcmV0cmlldmVyfGVufDB8fDB8fHww']
+    });
+    
+    this.createPet({
+      name: 'Luna',
+      type: 'cat',
+      breed: 'Siamese',
+      age: 2,
+      gender: 'female',
+      size: 'medium',
+      color: 'cream with brown points',
+      weight: '9 lbs',
+      description: 'Elegant and vocal cat who enjoys being the center of attention.',
+      status: 'available',
+      good_with_children: true,
+      good_with_dogs: false,
+      good_with_cats: true,
+      shelter_id: 2,
+      images: ['https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2lhbWVzZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D']
+    });
+    
+    this.createPet({
+      name: 'Charlie',
+      type: 'dog',
+      breed: 'Beagle',
+      age: 5,
+      gender: 'male',
+      size: 'medium',
+      color: 'tricolor',
+      weight: '25 lbs',
+      description: 'Sweet beagle with a gentle disposition. Loves long walks and cuddles.',
+      status: 'available',
+      good_with_children: true,
+      good_with_dogs: true,
+      good_with_cats: true,
+      shelter_id: 1,
+      images: ['https://images.unsplash.com/photo-1530126483408-aa533e55bdb2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmVhZ2xlfGVufDB8fDB8fHww']
+    });
+    
+    // Add some lost and found pets
+    this.createLostFoundPet({
+      type: 'lost',
+      pet_type: 'dog',
+      breed: 'Labrador Retriever',
+      name: 'Buddy',
+      gender: 'male',
+      description: 'Black lab with white spot on chest, wearing red collar with tags.',
+      location: 'Lincoln Park, Chicago',
+      date: new Date('2025-04-10'),
+      status: 'open',
+      reporter_id: 2,
+      contact_name: 'John Smith',
+      contact_email: 'john@example.com',
+      contact_phone: '555-123-4567',
+      images: ['https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmxhY2slMjBsYWJyYWRvcnxlbnwwfHwwfHx8MA%3D%3D']
+    });
+    
+    this.createLostFoundPet({
+      type: 'found',
+      pet_type: 'cat',
+      breed: 'Tabby',
+      name: null,
+      gender: 'unknown',
+      description: 'Orange tabby cat, no collar, very friendly and appears well-fed.',
+      location: 'Maple Street, Springfield',
+      date: new Date('2025-04-15'),
+      status: 'open',
+      reporter_id: 1,
+      contact_name: 'Jane Doe',
+      contact_email: 'jane@example.com',
+      contact_phone: '555-987-6543',
+      images: ['https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHRhYmJ5JTIwY2F0fGVufDB8fDB8fHww']
     });
   }
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.users.find(user => user.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    return this.users.find(user => user.username === username);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    return this.users.find(user => user.email === email);
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [createdUser] = await db.insert(users).values(user).returning();
-    return createdUser;
+    const newUser: User = {
+      id: this.nextId++,
+      ...user,
+    };
+    this.users.push(newUser);
+    return newUser;
   }
 
   async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(user)
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser;
+    const index = this.users.findIndex(u => u.id === id);
+    if (index === -1) return undefined;
+    
+    this.users[index] = { ...this.users[index], ...user };
+    return this.users[index];
   }
 
   // Pet operations
   async getPet(id: number): Promise<Pet | undefined> {
-    const [pet] = await db.select().from(pets).where(eq(pets.id, id));
-    return pet;
+    return this.pets.find(pet => pet.id === id);
   }
 
   async getAllPets(filters?: Partial<Pet>): Promise<Pet[]> {
-    // Convert filters to where conditions
-    const whereConditions = [];
-    if (filters?.type) whereConditions.push(eq(pets.type, filters.type));
-    if (filters?.status) whereConditions.push(eq(pets.status, filters.status));
+    if (!filters) return [...this.pets].sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
     
-    // No filters, return all
-    if (whereConditions.length === 0) {
-      return db.select().from(pets).orderBy(desc(pets.created_at));
-    }
-    
-    // Apply filters
-    return db
-      .select()
-      .from(pets)
-      .where(and(...whereConditions))
-      .orderBy(desc(pets.created_at));
+    return this.pets.filter(pet => {
+      if (filters.type && pet.type !== filters.type) return false;
+      if (filters.status && pet.status !== filters.status) return false;
+      return true;
+    }).sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
   }
 
   async createPet(pet: InsertPet): Promise<Pet> {
-    const [createdPet] = await db.insert(pets).values(pet).returning();
-    return createdPet;
+    const newPet: Pet = {
+      id: this.nextId++,
+      ...pet,
+      created_at: new Date()
+    };
+    this.pets.push(newPet);
+    return newPet;
   }
 
   async updatePet(id: number, pet: Partial<Pet>): Promise<Pet | undefined> {
-    const [updatedPet] = await db
-      .update(pets)
-      .set(pet)
-      .where(eq(pets.id, id))
-      .returning();
-    return updatedPet;
+    const index = this.pets.findIndex(p => p.id === id);
+    if (index === -1) return undefined;
+    
+    this.pets[index] = { ...this.pets[index], ...pet };
+    return this.pets[index];
   }
 
   async deletePet(id: number): Promise<boolean> {
-    await db.delete(pets).where(eq(pets.id, id));
+    const index = this.pets.findIndex(p => p.id === id);
+    if (index === -1) return false;
+    
+    this.pets.splice(index, 1);
     return true;
   }
 
   // Shelter operations
   async getShelter(id: number): Promise<Shelter | undefined> {
-    const [shelter] = await db.select().from(shelters).where(eq(shelters.id, id));
-    return shelter;
+    return this.shelters.find(shelter => shelter.id === id);
   }
 
   async getAllShelters(): Promise<Shelter[]> {
-    return db.select().from(shelters);
+    return [...this.shelters];
   }
 
   async createShelter(shelter: InsertShelter): Promise<Shelter> {
-    const [createdShelter] = await db.insert(shelters).values(shelter).returning();
-    return createdShelter;
+    const newShelter: Shelter = {
+      id: this.nextId++,
+      ...shelter
+    };
+    this.shelters.push(newShelter);
+    return newShelter;
   }
 
   async updateShelter(id: number, shelter: Partial<Shelter>): Promise<Shelter | undefined> {
-    const [updatedShelter] = await db
-      .update(shelters)
-      .set(shelter)
-      .where(eq(shelters.id, id))
-      .returning();
-    return updatedShelter;
+    const index = this.shelters.findIndex(s => s.id === id);
+    if (index === -1) return undefined;
+    
+    this.shelters[index] = { ...this.shelters[index], ...shelter };
+    return this.shelters[index];
   }
 
   // Adoption request operations
   async getAdoptionRequest(id: number): Promise<AdoptionRequest | undefined> {
-    const [request] = await db.select().from(adoptionRequests).where(eq(adoptionRequests.id, id));
-    return request;
+    return this.adoptionRequests.find(request => request.id === id);
   }
 
   async getAdoptionRequestsByPet(petId: number): Promise<AdoptionRequest[]> {
-    return db
-      .select()
-      .from(adoptionRequests)
-      .where(eq(adoptionRequests.pet_id, petId))
-      .orderBy(desc(adoptionRequests.created_at));
+    return this.adoptionRequests
+      .filter(request => request.pet_id === petId)
+      .sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
   }
 
   async getAdoptionRequestsByUser(userId: number): Promise<AdoptionRequest[]> {
-    return db
-      .select()
-      .from(adoptionRequests)
-      .where(eq(adoptionRequests.user_id, userId))
-      .orderBy(desc(adoptionRequests.created_at));
+    return this.adoptionRequests
+      .filter(request => request.user_id === userId)
+      .sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
   }
 
   async createAdoptionRequest(request: InsertAdoptionRequest): Promise<AdoptionRequest> {
-    const [createdRequest] = await db.insert(adoptionRequests).values(request).returning();
-    return createdRequest;
+    const newRequest: AdoptionRequest = {
+      id: this.nextId++,
+      ...request,
+      created_at: new Date()
+    };
+    this.adoptionRequests.push(newRequest);
+    return newRequest;
   }
 
   async updateAdoptionRequest(id: number, request: Partial<AdoptionRequest>): Promise<AdoptionRequest | undefined> {
-    const [updatedRequest] = await db
-      .update(adoptionRequests)
-      .set(request)
-      .where(eq(adoptionRequests.id, id))
-      .returning();
-    return updatedRequest;
+    const index = this.adoptionRequests.findIndex(r => r.id === id);
+    if (index === -1) return undefined;
+    
+    this.adoptionRequests[index] = { ...this.adoptionRequests[index], ...request };
+    return this.adoptionRequests[index];
   }
 
   // Lost and found pet operations
   async getLostFoundPet(id: number): Promise<LostFoundPet | undefined> {
-    const [pet] = await db.select().from(lostFoundPets).where(eq(lostFoundPets.id, id));
-    return pet;
+    return this.lostFoundPets.find(pet => pet.id === id);
   }
 
   async getAllLostFoundPets(type?: 'lost' | 'found'): Promise<LostFoundPet[]> {
     if (type) {
-      return db
-        .select()
-        .from(lostFoundPets)
-        .where(eq(lostFoundPets.type, type))
-        .orderBy(desc(lostFoundPets.created_at));
+      return this.lostFoundPets
+        .filter(pet => pet.type === type)
+        .sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
     }
-    return db.select().from(lostFoundPets).orderBy(desc(lostFoundPets.created_at));
+    return [...this.lostFoundPets].sort((a, b) => (b.created_at?.getTime() || 0) - (a.created_at?.getTime() || 0));
   }
 
   async createLostFoundPet(pet: InsertLostFoundPet): Promise<LostFoundPet> {
-    const [createdPet] = await db.insert(lostFoundPets).values(pet).returning();
-    return createdPet;
+    const newPet: LostFoundPet = {
+      id: this.nextId++,
+      ...pet,
+      created_at: new Date()
+    };
+    this.lostFoundPets.push(newPet);
+    return newPet;
   }
 
   async updateLostFoundPet(id: number, pet: Partial<LostFoundPet>): Promise<LostFoundPet | undefined> {
-    const [updatedPet] = await db
-      .update(lostFoundPets)
-      .set(pet)
-      .where(eq(lostFoundPets.id, id))
-      .returning();
-    return updatedPet;
+    const index = this.lostFoundPets.findIndex(p => p.id === id);
+    if (index === -1) return undefined;
+    
+    this.lostFoundPets[index] = { ...this.lostFoundPets[index], ...pet };
+    return this.lostFoundPets[index];
   }
-
-
 }
 
 // Export an instance of the storage implementation
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
