@@ -68,6 +68,6 @@ app.get('/test', (req, res) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(serving on port ${port});
+    log(`serving on port ${port}`);
   });
 })();
