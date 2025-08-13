@@ -188,7 +188,7 @@ process.on('unhandledRejection', (reason, promise) => {
       }
     }
     
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT || 8080;
     console.log("About to listen on port:", port);
     
     server.listen({
